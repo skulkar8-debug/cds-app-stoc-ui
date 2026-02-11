@@ -1,930 +1,949 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-// ─── SHARED DESIGN TOKENS ───
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS — High contrast light text
+   ═══════════════════════════════════════════ */
 const T = {
-  bg: "#0B0E14",
-  surface: "#111520",
-  surfaceAlt: "#161B28",
-  border: "#1E2536",
-  borderHover: "#2A3450",
-  text: "#E2E8F0",
-  textMuted: "#64748B",
-  textDim: "#475569",
-  accent: "#3B82F6",
-  accentGlow: "rgba(59,130,246,0.15)",
-  green: "#10B981",
-  greenDim: "rgba(16,185,129,0.12)",
-  red: "#EF4444",
-  redDim: "rgba(239,68,68,0.12)",
-  amber: "#F59E0B",
-  amberDim: "rgba(245,158,11,0.12)",
-  purple: "#8B5CF6",
-  font: "'DM Sans', sans-serif",
-  mono: "'JetBrains Mono', 'Fira Code', monospace",
-  display: "'Outfit', sans-serif",
-  radius: "8px",
-  radiusLg: "12px",
+  bg: "#0B0D11",
+  bgCard: "#12151C",
+  bgElevated: "#1A1E28",
+  bgHover: "#1F2430",
+  border: "#232836",
+  borderSubtle: "#1A1E28",
+  text: "#E9ECF2",
+  textSecondary: "#B0B6C3",
+  textMuted: "#6E7589",
+  textDim: "#454C5E",
+  accent: "#4B8EF5",
+  accentGlow: "rgba(75,142,245,0.12)",
+  accentBorder: "rgba(75,142,245,0.25)",
+  green: "#34D399",
+  greenDim: "rgba(52,211,153,0.10)",
+  red: "#F87171",
+  redDim: "rgba(248,113,113,0.10)",
+  amber: "#FBBF24",
+  amberDim: "rgba(251,191,36,0.10)",
+  purple: "#A78BFA",
+  purpleDim: "rgba(167,139,250,0.10)",
+  cyan: "#22D3EE",
+  radius: "6px",
+  font: "'JetBrains Mono', 'Fira Code', 'SF Mono', monospace",
+  fontSans: "'DM Sans', -apple-system, 'Segoe UI', sans-serif",
 };
 
-const fadeIn = `
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideRight { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-@keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
-@keyframes glow { 0%,100% { box-shadow: 0 0 8px rgba(59,130,246,0.3); } 50% { box-shadow: 0 0 20px rgba(59,130,246,0.5); } }
-`;
+/* ═══════════════════════════════════════════
+   MOCK DATA
+   ═══════════════════════════════════════════ */
+const PROJECTS = [
+  { id: 1, name: "Vet Clinics – CA", desc: "California veterinary acquisition targets", count: 1240, enriched: 850 },
+  { id: 2, name: "Dental Clinics – TX", desc: "Texas dental practice roll-up", count: 890, enriched: 612 },
+  { id: 3, name: "Pharma Distributors – US", desc: "National pharma distribution", count: 2100, enriched: 1450 },
+  { id: 4, name: "Med Spas – FL", desc: "Florida medical spa consolidation", count: 560, enriched: 340 },
+];
 
-const Badge = ({ children, color = T.accent, bg }) => (
-  <span style={{
-    display: "inline-flex", alignItems: "center", padding: "2px 10px",
-    borderRadius: "20px", fontSize: "11px", fontWeight: 600,
-    color, background: bg || `${color}18`, letterSpacing: "0.02em",
-  }}>{children}</span>
-);
+const GRID_DATA = [
+  { id: 1, rank: 9.5, name: "Pacific Coast Animal Hospital", city: "San Diego", state: "CA", website: "pacificcoastah.com", doctors: 8, emergency: true, services: "Oncology, Ortho, Dental, Emergency", revenue: "$4.2M", status: "Review", signals: 12 },
+  { id: 2, rank: 9.2, name: "Bay Area Veterinary Specialists", city: "San Francisco", state: "CA", website: "bavs.com", doctors: 12, emergency: true, services: "Surgery, Cardiology, Neuro", revenue: "$6.8M", status: "Approved", signals: 15 },
+  { id: 3, rank: 8.8, name: "Orange Grove Animal Hospital", city: "Orange", state: "CA", website: "ogah.com", doctors: 5, emergency: true, services: "Emergency, Dental, Wellness", revenue: "$2.9M", status: "Review", signals: 9 },
+  { id: 4, rank: 8.3, name: "Sacramento Valley Vet Center", city: "Sacramento", state: "CA", website: "sacvalleyvet.com", doctors: 6, emergency: false, services: "General, Dental, Surgery", revenue: "$3.1M", status: "Processing", signals: 7 },
+  { id: 5, rank: 7.9, name: "Marin County Pet Care", city: "Novato", state: "CA", website: "marinpetcare.com", doctors: 4, emergency: false, services: "Wellness, Dental, Boarding", revenue: "$1.8M", status: "Review", signals: 6 },
+  { id: 6, rank: 7.5, name: "Central Valley Animal Clinic", city: "Fresno", state: "CA", website: "cvac.com", doctors: 3, emergency: false, services: "General, Vaccines, Surgery", revenue: "$1.4M", status: "Review", signals: 5 },
+  { id: 7, rank: 7.1, name: "Silicon Valley Vet Partners", city: "San Jose", state: "CA", website: "svvp.com", doctors: 7, emergency: true, services: "Emergency, Oncology, Rehab", revenue: "$5.1M", status: "Approved", signals: 11 },
+  { id: 8, rank: 6.8, name: "LA Metro Animal Hospital", city: "Los Angeles", state: "CA", website: "lametroah.com", doctors: 9, emergency: true, services: "Emergency, ICU, Surgery, Dental", revenue: "$7.2M", status: "Processing", signals: 13 },
+  { id: 9, rank: 6.2, name: "Napa Valley Pet Hospital", city: "Napa", state: "CA", website: "napapet.com", doctors: 2, emergency: false, services: "General, Wellness", revenue: "$0.9M", status: "Review", signals: 3 },
+  { id: 10, rank: 5.5, name: "Inland Empire Vet Group", city: "Riverside", state: "CA", website: "ievg.com", doctors: 4, emergency: false, services: "General, Dental, Exotic", revenue: "$2.0M", status: "Archived", signals: 4 },
+];
 
-const Icon = ({ type, size = 16 }) => {
-  const s = { width: size, height: size, display: "inline-block" };
-  const icons = {
-    folder: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="1.8"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>,
-    plus: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-    upload: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>,
-    grid: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
-    search: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
-    target: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
-    brain: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a5 5 0 015 5c0 1.5-.5 2.5-1.5 3.5L12 14l-3.5-3.5C7.5 9.5 7 8.5 7 7a5 5 0 015-5z"/><path d="M12 14v8"/><path d="M8 18h8"/></svg>,
-    eye: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-    check: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
-    x: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.red} strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-    chevron: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
-    lock: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
-    users: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
-    bell: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.amber} strokeWidth="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>,
-    map: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
-    settings: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
-    refresh: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>,
-  };
-  return icons[type] || null;
-};
+const ACTIVITIES = [
+  { time: "2m ago", text: "AI Agent found 'Managed Services' keyword for Orange Grove Animal Hospital", type: "signal" },
+  { time: "5m ago", text: "Website change detected: Pacific Coast AH updated services page", type: "watcher" },
+  { time: "12m ago", text: "Enrichment complete: Bay Area Veterinary Specialists — 15 signals extracted", type: "enrichment" },
+  { time: "18m ago", text: "New doctor listing found for Silicon Valley Vet Partners (+1 Doctor)", type: "signal" },
+  { time: "25m ago", text: "Thesis scoring updated: 3 targets moved to Review queue", type: "scoring" },
+  { time: "1h ago", text: "Watcher scan completed for Sacramento CBSA — 45 targets refreshed", type: "watcher" },
+  { time: "2h ago", text: "Analyst Mark approved 8 targets in Vet Clinics – CA", type: "action" },
+];
 
-// ─── SCREEN 1: AUTH GATEWAY ───
-const AuthScreen = () => (
-  <div style={{ display: "flex", height: "100%", background: T.bg }}>
-    <div style={{
-      flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
-      alignItems: "center", background: `linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)`,
-      position: "relative", overflow: "hidden",
+const THESIS_RULES = [
+  { field: "Services", operator: "contains", value: "Oncology", points: 2.5 },
+  { field: "Services", operator: "contains", value: "Emergency", points: 2.0 },
+  { field: "Doctors", operator: "greater_than", value: "5", points: 1.5 },
+  { field: "Revenue", operator: "greater_than", value: "$2M", points: 1.0 },
+  { field: "Services", operator: "contains", value: "Surgery", points: 1.0 },
+];
+
+const CBSA_DATA = [
+  { name: "San Francisco-Oakland", targets: 320, avgRank: 7.8, lastScan: "2 days ago", tier: 1 },
+  { name: "Los Angeles-Long Beach", targets: 480, avgRank: 6.9, lastScan: "3 days ago", tier: 1 },
+  { name: "San Diego-Carlsbad", targets: 210, avgRank: 8.1, lastScan: "1 day ago", tier: 1 },
+  { name: "Sacramento-Roseville", targets: 145, avgRank: 6.2, lastScan: "5 days ago", tier: 2 },
+  { name: "San Jose-Sunnyvale", targets: 190, avgRank: 7.4, lastScan: "4 days ago", tier: 2 },
+  { name: "Fresno-Madera", targets: 85, avgRank: 5.1, lastScan: "12 days ago", tier: 3 },
+];
+
+/* ═══════════════════════════════════════════
+   REUSABLE COMPONENTS
+   ═══════════════════════════════════════════ */
+function Badge({ children, color = T.accent, bg }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", padding: "3px 9px",
+      borderRadius: "4px", fontSize: "10.5px", fontWeight: 600,
+      fontFamily: T.font, letterSpacing: "0.03em",
+      color: color,
+      background: bg || (color === T.green ? T.greenDim : color === T.red ? T.redDim : color === T.amber ? T.amberDim : color === T.purple ? T.purpleDim : T.accentGlow),
     }}>
-      <div style={{ position: "absolute", inset: 0, opacity: 0.04, backgroundImage: "radial-gradient(circle at 1px 1px, #3B82F6 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center", animation: "fadeIn 0.8s ease" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", marginBottom: 20 }}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon type="target" size={24} />
+      {children}
+    </span>
+  );
+}
+
+function StatCard({ label, value, sub, accent = T.accent }) {
+  return (
+    <div style={{
+      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
+      padding: "20px 22px", flex: 1, position: "relative", overflow: "hidden",
+    }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: accent }} />
+      <div style={{ fontSize: "10.5px", color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: T.font, marginBottom: "10px" }}>{label}</div>
+      <div style={{ fontSize: "26px", fontWeight: 700, fontFamily: T.font, color: T.text, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: "11px", color: T.textSecondary, marginTop: "8px" }}>{sub}</div>}
+    </div>
+  );
+}
+
+function Input({ placeholder, value, onChange, type = "text", style: s }) {
+  return (
+    <input type={type} placeholder={placeholder} value={value} onChange={onChange} style={{
+      width: "100%", padding: "10px 14px", background: T.bgElevated,
+      border: `1px solid ${T.border}`, borderRadius: T.radius,
+      color: T.text, fontSize: "13px", fontFamily: T.fontSans,
+      outline: "none", transition: "border-color 0.2s", boxSizing: "border-box", ...s,
+    }}
+    onFocus={e => e.target.style.borderColor = T.accent}
+    onBlur={e => e.target.style.borderColor = T.border} />
+  );
+}
+
+function Btn({ children, primary, danger, onClick, style: s, disabled }) {
+  const bg = primary ? T.accent : danger ? T.red : "transparent";
+  const clr = primary ? "#fff" : danger ? "#fff" : T.textSecondary;
+  return (
+    <button disabled={disabled} onClick={onClick} style={{
+      padding: "9px 18px", background: bg, color: clr,
+      border: primary || danger ? "none" : `1px solid ${T.border}`,
+      borderRadius: T.radius, fontSize: "12.5px", fontWeight: 600,
+      fontFamily: T.fontSans, cursor: disabled ? "not-allowed" : "pointer",
+      opacity: disabled ? 0.4 : 1, transition: "all 0.15s",
+      display: "inline-flex", alignItems: "center", gap: "6px",
+      whiteSpace: "nowrap", ...s,
+    }}>{children}</button>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR NAVIGATION — Clear, readable
+   ═══════════════════════════════════════════ */
+function Sidebar({ screen, setScreen }) {
+  const items = [
+    { key: "dashboard", label: "Dashboard", icon: "⊞", badge: null },
+    { key: "project",   label: "Projects",  icon: "◧", badge: "4" },
+    { key: "thesis",    label: "Thesis",     icon: "◈", badge: null },
+    { key: "watcher",   label: "Watcher",    icon: "◉", badge: "12" },
+  ];
+
+  return (
+    <div style={{
+      width: "230px", background: T.bgCard, borderRight: `1px solid ${T.border}`,
+      display: "flex", flexDirection: "column", flexShrink: 0,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: "20px 18px 16px", borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            width: "32px", height: "32px", borderRadius: "8px",
+            background: `linear-gradient(135deg, ${T.accent}, ${T.cyan})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "13px", fontWeight: 800, color: "#fff", fontFamily: T.font,
+          }}>TI</div>
+          <div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: T.text, letterSpacing: "-0.01em" }}>Target Intel</div>
+            <div style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font }}>Intelligence Platform</div>
           </div>
-          <span style={{ fontSize: 28, fontWeight: 700, fontFamily: T.display, color: T.text, letterSpacing: "-0.02em" }}>
-            Target Intelligence
-          </span>
-        </div>
-        <p style={{ color: T.textMuted, fontSize: 16, maxWidth: 320, lineHeight: 1.6, fontFamily: T.font }}>
-          Compounding Intelligence<br />for Private Equity
-        </p>
-        <div style={{ marginTop: 48, display: "flex", gap: 16, justifyContent: "center" }}>
-          {["1,240", "850", "12"].map((n, i) => (
-            <div key={i} style={{
-              background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`,
-              borderRadius: T.radius, padding: "16px 24px", textAlign: "center",
-              animation: `fadeIn 0.6s ease ${0.3 + i * 0.15}s both`,
-            }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{n}</div>
-              <div style={{ fontSize: 11, color: T.textDim, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                {["Targets", "Enriched", "Alerts"][i]}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
-    </div>
-    <div style={{ width: 480, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 60px", background: T.surface, borderLeft: `1px solid ${T.border}` }}>
-      <div style={{ animation: "slideRight 0.6s ease" }}>
-        <div style={{ marginBottom: 8 }}><Icon type="lock" size={20} /></div>
-        <h2 style={{ fontSize: 24, fontWeight: 600, color: T.text, fontFamily: T.display, margin: "12px 0 6px" }}>Welcome back</h2>
-        <p style={{ color: T.textMuted, fontSize: 14, marginBottom: 32, fontFamily: T.font }}>Sign in to access your intelligence workspace.</p>
-        <button style={{
-          width: "100%", padding: "14px", borderRadius: T.radius, border: `1px solid ${T.border}`,
-          background: T.surfaceAlt, color: T.text, fontSize: 14, fontWeight: 500, cursor: "pointer",
-          fontFamily: T.font, marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Sign in with SSO
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0", color: T.textDim, fontSize: 12 }}>
-          <div style={{ flex: 1, height: 1, background: T.border }} />
-          <span>or continue with email</span>
-          <div style={{ flex: 1, height: 1, background: T.border }} />
-        </div>
-        {["Email address", "Password"].map((label, i) => (
-          <div key={i} style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, color: T.textMuted, marginBottom: 6, fontWeight: 500, fontFamily: T.font }}>{label}</label>
-            <input
-              type={i === 1 ? "password" : "email"}
-              placeholder={i === 0 ? "analyst@firm.com" : "••••••••"}
+
+      {/* Section Label */}
+      <div style={{ padding: "16px 18px 6px" }}>
+        <div style={{ fontSize: "9.5px", color: T.textDim, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: T.font, fontWeight: 700 }}>Navigation</div>
+      </div>
+
+      {/* Nav Items */}
+      <div style={{ padding: "0 10px", flex: 1 }}>
+        {items.map(item => {
+          const active = screen === item.key;
+          return (
+            <div key={item.key} onClick={() => setScreen(item.key)}
               style={{
-                width: "100%", padding: "12px 14px", borderRadius: T.radius, border: `1px solid ${T.border}`,
-                background: T.bg, color: T.text, fontSize: 14, fontFamily: T.font, outline: "none", boxSizing: "border-box",
+                padding: "10px 12px", borderRadius: T.radius, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: "10px",
+                background: active ? T.accentGlow : "transparent",
+                border: active ? `1px solid ${T.accentBorder}` : "1px solid transparent",
+                color: active ? T.accent : T.textSecondary,
+                fontSize: "13px", fontWeight: active ? 600 : 400,
+                marginBottom: "4px", transition: "all 0.15s",
               }}
-            />
-          </div>
-        ))}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.textMuted, cursor: "pointer" }}>
-            <input type="checkbox" style={{ accentColor: T.accent }} /> Remember me
-          </label>
-          <a style={{ fontSize: 12, color: T.accent, textDecoration: "none", cursor: "pointer" }}>Forgot password?</a>
-        </div>
-        <button style={{
-          width: "100%", padding: "14px", borderRadius: T.radius, border: "none",
-          background: `linear-gradient(135deg, ${T.accent}, #2563EB)`, color: "#fff",
-          fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: T.font,
-        }}>Sign In</button>
-        <p style={{ textAlign: "center", fontSize: 12, color: T.textDim, marginTop: 24 }}>
-          Don't have an account? <span style={{ color: T.accent, cursor: "pointer" }}>Contact Admin</span>
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-// ─── SCREEN 2: PROJECT DASHBOARD (Phase 1) ───
-const ProjectDashboard = () => {
-  const [activeProject, setActiveProject] = useState(0);
-  const projects = [
-    { name: "Vet Clinics – CA", files: 3, rows: 1240 },
-    { name: "Dental Clinics – TX", files: 1, rows: 580 },
-    { name: "Pharma Distributors – US", files: 0, rows: 0 },
-  ];
-  const columns = ["Business Name", "Address", "Phone", "Website", "Services", "Doctors", "Rating"];
-  const mockData = [
-    ["Orange Grove Animal Hospital", "1234 Main St, Orange CA", "(714) 555-0123", "orangegrovevet.com", "Emergency, Oncology, Surgery", "4", "4.8"],
-    ["Pacific Coast Veterinary", "5678 Pacific Hwy, San Diego CA", "(619) 555-0456", "pacificcoastvet.com", "General, Dental, Dermatology", "3", "4.5"],
-    ["Bay Area Animal Care", "910 Bay Blvd, San Francisco CA", "(415) 555-0789", "bayareaanimal.com", "Emergency, Cardiology", "6", "4.9"],
-    ["SoCal Pet Wellness", "2345 Sunset Dr, Los Angeles CA", "(323) 555-0234", "socalpet.com", "Wellness, Vaccination, Surgery", "2", "4.2"],
-    ["Valley Vet Specialists", "6789 Valley Rd, Fresno CA", "(559) 555-0567", "valleyvet.com", "Orthopedics, Rehab, General", "5", "4.7"],
-    ["Golden State Animal Hospital", "1357 Gold Ave, Sacramento CA", "(916) 555-0890", "goldenstateah.com", "Emergency, Internal Med", "3", "4.6"],
-    ["Redwood Veterinary Clinic", "2468 Redwood St, Santa Rosa CA", "(707) 555-0135", "redwoodvet.com", "Exotic, Avian, General", "2", "4.3"],
-    ["Coastal Paws Veterinary", "3579 Coast Rd, Monterey CA", "(831) 555-0246", "coastalpaws.com", "Surgery, Dental, Emergency", "4", "4.8"],
-  ];
-  return (
-    <div style={{ display: "flex", height: "100%", background: T.bg }}>
-      {/* Left Panel */}
-      <div style={{ width: 260, background: T.surface, borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", padding: "20px 0" }}>
-        <div style={{ padding: "0 16px", marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon type="target" size={14} />
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = T.bgHover; e.currentTarget.style.color = T.text; }}}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = active ? T.accentGlow : "transparent"; e.currentTarget.style.color = active ? T.accent : T.textSecondary; }}}
+            >
+              <span style={{ fontFamily: T.font, fontSize: "15px", width: "20px", textAlign: "center", opacity: active ? 1 : 0.6 }}>{item.icon}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.badge && <span style={{ fontSize: "10px", fontFamily: T.font, color: active ? T.accent : T.textMuted, background: active ? "rgba(75,142,245,0.2)" : T.bgElevated, padding: "2px 7px", borderRadius: "4px", fontWeight: 600 }}>{item.badge}</span>}
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: T.text, fontFamily: T.display }}>Target Intel</span>
-          </div>
-          <button style={{
-            width: "100%", padding: "10px 12px", borderRadius: T.radius, border: `1px dashed ${T.borderHover}`,
-            background: "transparent", color: T.accent, fontSize: 13, fontWeight: 500, cursor: "pointer",
-            fontFamily: T.font, display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <Icon type="plus" size={14} /> New Project
-          </button>
-        </div>
-        <div style={{ padding: "0 8px", flex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 8px", marginBottom: 8 }}>Projects</div>
-          {projects.map((p, i) => (
-            <div key={i} onClick={() => setActiveProject(i)} style={{
-              padding: "10px 12px", borderRadius: T.radius, cursor: "pointer", marginBottom: 2,
-              background: activeProject === i ? T.accentGlow : "transparent",
-              border: `1px solid ${activeProject === i ? T.accent + "40" : "transparent"}`,
-              transition: "all 0.15s ease",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon type="folder" size={14} />
-                <span style={{ fontSize: 13, color: activeProject === i ? T.text : T.textMuted, fontWeight: activeProject === i ? 500 : 400 }}>{p.name}</span>
-              </div>
-              {activeProject === i && (
-                <div style={{ marginTop: 6, marginLeft: 22, display: "flex", gap: 10, fontSize: 11, color: T.textDim }}>
-                  <span>{p.files} files</span>
-                  <span>•</span>
-                  <span>{p.rows.toLocaleString()} rows</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon type="users" size={13} />
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: T.text, fontWeight: 500 }}>Sarah Chen</div>
-              <div style={{ fontSize: 10, color: T.textDim }}>Analyst</div>
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Collab Banner */}
-        <div style={{
-          padding: "10px 24px", background: T.amberDim, borderBottom: `1px solid ${T.amber}30`,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          animation: "fadeIn 0.4s ease",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.amber }}>
-            <Icon type="bell" size={14} />
-            <span>Updates detected from another analyst. Refresh to see the latest data.</span>
-          </div>
-          <button style={{
-            padding: "5px 14px", borderRadius: T.radius, border: `1px solid ${T.amber}40`,
-            background: "transparent", color: T.amber, fontSize: 12, fontWeight: 500, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-          }}>
-            <Icon type="refresh" size={12} /> Refresh Data
-          </button>
-        </div>
-
-        {/* Breadcrumbs */}
-        <div style={{ padding: "16px 28px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.textDim }}>
-          <span>Home</span><Icon type="chevron" size={10} /><span>Projects</span><Icon type="chevron" size={10} />
-          <span style={{ color: T.text, fontWeight: 500 }}>{projects[activeProject].name}</span>
-        </div>
-
-        {/* Upload Area */}
-        <div style={{ padding: "16px 28px" }}>
+      {/* User card */}
+      <div style={{ padding: "14px 18px", borderTop: `1px solid ${T.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{
-            border: `2px dashed ${T.borderHover}`, borderRadius: T.radiusLg, padding: "28px",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 16,
-            background: `${T.surfaceAlt}60`, transition: "all 0.2s ease",
-          }}>
-            <Icon type="upload" size={24} />
-            <div>
-              <div style={{ fontSize: 14, color: T.text, fontWeight: 500 }}>Drop CSV or Excel files here</div>
-              <div style={{ fontSize: 12, color: T.textDim, marginTop: 2 }}>or <span style={{ color: T.accent, cursor: "pointer" }}>browse files</span> • .csv, .xlsx supported</div>
-            </div>
-          </div>
-          <div style={{ marginTop: 10, display: "flex", gap: 12, fontSize: 12 }}>
-            <span style={{ color: T.green, display: "flex", alignItems: "center", gap: 4 }}><Icon type="check" size={12} /> 2 files uploaded successfully</span>
-            <span style={{ color: T.textDim }}>•</span>
-            <span style={{ color: T.textMuted }}>1,240 rows added to {projects[activeProject].name}</span>
-          </div>
-        </div>
-
-        {/* Intelligence Grid */}
-        <div style={{ flex: 1, padding: "0 28px 20px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: T.text, fontFamily: T.display, margin: 0 }}>Intelligence Grid</h3>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: T.radius,
-                background: T.surfaceAlt, border: `1px solid ${T.border}`, fontSize: 12,
-              }}>
-                <Icon type="search" size={13} />
-                <span style={{ color: T.textDim }}>Search records...</span>
-              </div>
-              <Badge color={T.textMuted} bg={T.surfaceAlt}>Page 1 of 25</Badge>
-            </div>
-          </div>
-          <div style={{ flex: 1, overflow: "auto", borderRadius: T.radiusLg, border: `1px solid ${T.border}`, background: T.surface }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: T.font }}>
-              <thead>
-                <tr>
-                  {columns.map((col, i) => (
-                    <th key={i} style={{
-                      position: "sticky", top: 0, zIndex: 2, padding: "10px 14px", textAlign: "left",
-                      background: T.surfaceAlt, borderBottom: `1px solid ${T.border}`,
-                      fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase",
-                      letterSpacing: "0.06em", whiteSpace: "nowrap", cursor: "pointer",
-                    }}>{col} ↕</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {mockData.map((row, ri) => (
-                  <tr key={ri} style={{ borderBottom: `1px solid ${T.border}08` }}>
-                    {row.map((cell, ci) => (
-                      <td key={ci} style={{
-                        padding: "10px 14px", color: ci === 0 ? T.text : T.textMuted,
-                        fontWeight: ci === 0 ? 500 : 400, whiteSpace: "nowrap",
-                        ...(ci === 3 ? { color: T.accent, cursor: "pointer" } : {}),
-                        ...(ci === 6 ? { color: parseFloat(cell) >= 4.7 ? T.green : T.textMuted, fontFamily: T.mono, fontWeight: 600 } : {}),
-                      }}>{cell}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            width: "32px", height: "32px", borderRadius: "50%",
+            background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "11px", fontWeight: 700, color: "#fff",
+          }}>JD</div>
+          <div>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: T.text }}>John Doe</div>
+            <div style={{ fontSize: "10px", color: T.textMuted }}>Analyst</div>
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// ─── SCREEN 3: COMMAND DASHBOARD ───
-const CommandDashboard = () => {
-  const stats = [
-    { label: "Total Targets", value: "1,240", icon: "target", color: T.accent },
-    { label: "Enriched Candidates", value: "850", icon: "brain", color: T.green },
-    { label: "Watcher Alerts", value: "12 New", icon: "bell", color: T.amber },
-  ];
-  const projects = [
-    { name: "Veterinary Clinics - CA", progress: 450, total: 1000, status: "Active" },
-    { name: "Dental Spas - TX", progress: 280, total: 600, status: "Active" },
-    { name: "Pharma Distributors - US", progress: 50, total: 800, status: "Queued" },
-    { name: "Med Devices - Northeast", progress: 120, total: 400, status: "Active" },
-  ];
-  const activities = [
-    { msg: "AI Agent found 'Managed Services' for Orange Grove Animal Hospital", time: "2m ago" },
-    { msg: "450 new targets ingested for Veterinary Clinics - CA", time: "15m ago" },
-    { msg: "Watcher detected website change: Pacific Coast Vet", time: "1h ago" },
-    { msg: "Scoring complete: Dental Spas - TX (280 processed)", time: "2h ago" },
-    { msg: "New analyst 'J.Park' joined Pharma Distributors workspace", time: "3h ago" },
-  ];
-  const sideItems = [
-    { icon: "grid", label: "Dashboard", active: true },
-    { icon: "search", label: "Scrape" },
-    { icon: "target", label: "Targets" },
-    { icon: "map", label: "Strategies" },
-    { icon: "settings", label: "Settings" },
-  ];
+/* ═══════════════════════════════════════════
+   TOP BAR
+   ═══════════════════════════════════════════ */
+function TopBar({ breadcrumb }) {
+  return (
+    <div style={{
+      height: "52px", borderBottom: `1px solid ${T.border}`, display: "flex",
+      alignItems: "center", padding: "0 28px", gap: "16px", flexShrink: 0,
+      background: T.bgCard,
+    }}>
+      <div style={{ fontSize: "11px", fontFamily: T.font }}>
+        <span style={{ color: T.textMuted }}>Home</span>
+        <span style={{ color: T.textDim, margin: "0 8px" }}>›</span>
+        <span style={{ color: T.text, fontWeight: 600 }}>{breadcrumb}</span>
+      </div>
+      <div style={{ flex: 1 }} />
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: T.green, boxShadow: `0 0 6px ${T.green}` }} />
+        <span style={{ fontSize: "11px", color: T.textSecondary, fontFamily: T.font }}>Connected</span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   1. LOGIN SCREEN
+   ═══════════════════════════════════════════ */
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
 
   return (
-    <div style={{ display: "flex", height: "100%", background: T.bg }}>
-      {/* Sidebar */}
-      <div style={{ width: 220, background: T.surface, borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", padding: "20px 0" }}>
-        <div style={{ padding: "0 16px", marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon type="target" size={14} />
-            </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: T.text, fontFamily: T.display }}>Target Intel</span>
+    <div style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: T.fontSans, color: T.text }}>
+      {/* Left branding */}
+      <div style={{
+        flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
+        alignItems: "center", padding: "60px",
+        background: `radial-gradient(ellipse at 30% 50%, rgba(75,142,245,0.06) 0%, transparent 70%)`,
+        borderRight: `1px solid ${T.border}`,
+      }}>
+        <div style={{ textAlign: "center", maxWidth: "440px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "40px", justifyContent: "center" }}>
+            <div style={{
+              width: "44px", height: "44px", borderRadius: "10px",
+              background: `linear-gradient(135deg, ${T.accent}, ${T.cyan})`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "18px", fontWeight: 800, color: "#fff", fontFamily: T.font,
+            }}>TI</div>
+            <span style={{ fontSize: "22px", fontWeight: 700, color: T.text }}>Target Intelligence</span>
           </div>
-        </div>
-        <div style={{ padding: "0 8px", flex: 1 }}>
-          {sideItems.map((item, i) => (
-            <div key={i} style={{
-              padding: "9px 12px", borderRadius: T.radius, cursor: "pointer", marginBottom: 2,
-              background: item.active ? T.accentGlow : "transparent",
-              border: `1px solid ${item.active ? T.accent + "30" : "transparent"}`,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <Icon type={item.icon} size={15} />
-              <span style={{ fontSize: 13, color: item.active ? T.text : T.textMuted, fontWeight: item.active ? 500 : 400 }}>{item.label}</span>
-            </div>
-          ))}
+
+          <h1 style={{ fontSize: "36px", fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.03em", marginBottom: "16px", color: T.text }}>
+            Compounding Intelligence<br/>for Private Equity
+          </h1>
+          <p style={{ fontSize: "15px", color: T.textSecondary, lineHeight: 1.7, marginBottom: "44px" }}>
+            Automated target discovery, enrichment, and monitoring — so your team compounds knowledge while you sleep.
+          </p>
+
+          <div style={{ display: "flex", gap: "32px", justifyContent: "center" }}>
+            {[["1,240", "Targets Tracked"], ["850", "AI Enriched"], ["12", "Watcher Alerts"]].map(([v, l]) => (
+              <div key={l} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "22px", fontWeight: 700, fontFamily: T.font, color: T.accent }}>{v}</div>
+                <div style={{ fontSize: "10px", color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: T.font, marginTop: "6px" }}>{l}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Main */}
-      <div style={{ flex: 1, overflow: "auto", padding: "24px 32px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <div>
-            <div style={{ fontSize: 12, color: T.textDim, marginBottom: 4 }}>Home › Dashboard</div>
-            <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, fontFamily: T.display, margin: 0 }}>Command Dashboard</h1>
-          </div>
-          <button style={{
-            padding: "10px 18px", borderRadius: T.radius, border: "none",
-            background: `linear-gradient(135deg, ${T.accent}, #2563EB)`, color: "#fff",
-            fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: T.font,
-            display: "flex", alignItems: "center", gap: 8,
+      {/* Right form */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "60px" }}>
+        <div style={{ width: "100%", maxWidth: "380px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "6px", color: T.text }}>Welcome back</h2>
+          <p style={{ fontSize: "14px", color: T.textSecondary, marginBottom: "36px" }}>Sign in to access your intelligence workspace.</p>
+
+          <button onClick={onLogin} style={{
+            width: "100%", padding: "13px", marginBottom: "28px", cursor: "pointer",
+            background: `linear-gradient(135deg, ${T.accent}, #3575E2)`,
+            border: "none", borderRadius: T.radius, fontSize: "14px", fontWeight: 600,
+            color: "#fff", fontFamily: T.fontSans,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
           }}>
-            <Icon type="plus" size={14} /> New Thesis
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="white" strokeWidth="1.5"/><path d="M5.5 8h5M8 5.5l2.5 2.5-2.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Sign in with SSO
           </button>
-        </div>
 
-        {/* Stats Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
-          {stats.map((s, i) => (
-            <div key={i} style={{
-              background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusLg,
-              padding: "22px 24px", animation: `fadeIn 0.5s ease ${i * 0.1}s both`,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <Icon type={s.icon} size={16} />
-                <span style={{ fontSize: 12, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500 }}>{s.label}</span>
-              </div>
-              <div style={{ fontSize: 32, fontWeight: 700, color: s.color, fontFamily: T.mono }}>{s.value}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "28px" }}>
+            <div style={{ flex: 1, height: "1px", background: T.border }} />
+            <span style={{ fontSize: "10.5px", color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: T.font }}>or email</span>
+            <div style={{ flex: 1, height: "1px", background: T.border }} />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+            <div>
+              <label style={{ fontSize: "11px", color: T.textSecondary, fontWeight: 600, display: "block", marginBottom: "6px" }}>Email</label>
+              <Input placeholder="analyst@firm.com" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
-          ))}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          {/* Active Searches */}
-          <div>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 14, fontFamily: T.display }}>Active Searches</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              {projects.map((p, i) => (
-                <div key={i} style={{
-                  background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusLg,
-                  padding: "18px", animation: `slideUp 0.5s ease ${0.2 + i * 0.08}s both`,
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{p.name}</span>
-                    <Badge color={p.status === "Active" ? T.green : T.textDim}>{p.status}</Badge>
-                  </div>
-                  <div style={{ background: T.bg, borderRadius: 6, height: 6, overflow: "hidden", marginBottom: 8 }}>
-                    <div style={{ height: "100%", width: `${(p.progress / p.total) * 100}%`, background: `linear-gradient(90deg, ${T.accent}, ${T.green})`, borderRadius: 6, transition: "width 0.6s ease" }} />
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, color: T.textDim, fontFamily: T.mono }}>{p.progress}/{p.total} Processed</span>
-                    <span style={{ fontSize: 11, color: T.accent, cursor: "pointer", fontWeight: 500 }}>Resume →</span>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <label style={{ fontSize: "11px", color: T.textSecondary, fontWeight: 600, display: "block", marginBottom: "6px" }}>Password</label>
+              <Input placeholder="••••••••" type="password" value={pass} onChange={e => setPass(e.target.value)} />
             </div>
           </div>
 
-          {/* Activity Feed */}
-          <div>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 14, fontFamily: T.display }}>Recent Activity</h3>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusLg, overflow: "hidden" }}>
-              {activities.map((a, i) => (
-                <div key={i} style={{
-                  padding: "14px 18px", borderBottom: i < activities.length - 1 ? `1px solid ${T.border}` : "none",
-                  animation: `slideRight 0.4s ease ${0.3 + i * 0.06}s both`,
-                }}>
-                  <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.4 }}>{a.msg}</div>
-                  <div style={{ fontSize: 11, color: T.textDim, marginTop: 4 }}>{a.time}</div>
-                </div>
-              ))}
-            </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: T.textSecondary, cursor: "pointer" }}>
+              <input type="checkbox" style={{ accentColor: T.accent }} /> Remember me
+            </label>
+            <span style={{ fontSize: "12px", color: T.accent, cursor: "pointer" }}>Forgot password?</span>
           </div>
+
+          <button onClick={onLogin} style={{
+            width: "100%", padding: "12px", cursor: "pointer",
+            background: "transparent", border: `1px solid ${T.border}`,
+            borderRadius: T.radius, fontSize: "13px", fontWeight: 600,
+            color: T.textSecondary, fontFamily: T.fontSans,
+          }}>Sign in with Email</button>
+
+          <p style={{ fontSize: "12px", color: T.textMuted, textAlign: "center", marginTop: "32px" }}>
+            Don't have an account? <span style={{ color: T.textSecondary, fontWeight: 500 }}>Contact Admin</span>
+          </p>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// ─── SCREEN 4: THESIS ARCHITECT ───
-const ThesisArchitect = () => {
-  const rules = [
-    { field: "Services", operator: "contains", value: "Oncology", points: "+2.5" },
-    { field: "Services", operator: "contains", value: "Emergency", points: "+3.0" },
-    { field: "Doctors", operator: ">=", value: "3", points: "+1.5" },
-    { field: "Rating", operator: ">=", value: "4.5", points: "+1.0" },
-  ];
-  const jsonPreview = JSON.stringify({
-    name: "Vet Clinics - CA",
-    sector: "Veterinary",
-    positive_keywords: ["Veterinarian", "Animal Hospital"],
-    negative_keywords: ["Pet Store", "Grooming", "Non-profit"],
-    scoring: rules.map(r => ({
-      if: { field: r.field, [r.operator]: r.value },
-      then: { add_points: parseFloat(r.points) }
-    }))
-  }, null, 2);
-
+/* ═══════════════════════════════════════════
+   2. COMMAND DASHBOARD
+   ═══════════════════════════════════════════ */
+function CommandDashboard({ setScreen }) {
   return (
-    <div style={{ display: "flex", height: "100%", background: T.bg }}>
-      {/* Left - Inputs */}
-      <div style={{ flex: 1, overflow: "auto", padding: "28px 32px", borderRight: `1px solid ${T.border}` }}>
-        <div style={{ fontSize: 12, color: T.textDim, marginBottom: 4 }}>Home › Thesis Architect</div>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: T.text, fontFamily: T.display, margin: "0 0 24px" }}>Configure AI Thesis</h1>
+    <div>
+      <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
+        <StatCard label="Total Targets" value="4,790" sub="+120 this week" accent={T.accent} />
+        <StatCard label="Enriched" value="3,252" sub="67.9% complete" accent={T.green} />
+        <StatCard label="Watcher Alerts" value="12 New" sub="Last 24 hours" accent={T.amber} />
+        <StatCard label="Avg Rank" value="7.2" sub="↑ 0.4 vs last week" accent={T.purple} />
+      </div>
 
-        {/* Metadata */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Thesis Metadata</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {[["Thesis Name", "Vet Clinics - CA"], ["Target Sector", "Veterinary"]].map(([label, val], i) => (
-              <div key={i}>
-                <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 6, display: "block" }}>{label}</label>
-                <input readOnly value={val} style={{
-                  width: "100%", padding: "10px 12px", borderRadius: T.radius, border: `1px solid ${T.border}`,
-                  background: T.surface, color: T.text, fontSize: 13, fontFamily: T.font, boxSizing: "border-box",
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        {/* Active Searches */}
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius }}>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: T.text }}>Active Searches</span>
+            <Btn primary style={{ fontSize: "11px", padding: "5px 12px" }} onClick={() => setScreen("thesis")}>+ New Thesis</Btn>
+          </div>
+          <div style={{ padding: "12px" }}>
+            {PROJECTS.slice(0, 3).map(p => (
+              <div key={p.id} onClick={() => setScreen("project")}
+                style={{ padding: "14px", background: T.bgElevated, borderRadius: T.radius, marginBottom: "8px", cursor: "pointer", border: `1px solid ${T.borderSubtle}`, transition: "border-color 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = T.border}
+                onMouseLeave={e => e.currentTarget.style.borderColor = T.borderSubtle}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: T.text }}>{p.name}</span>
+                  <Badge color={T.green}>{Math.round(p.enriched / p.count * 100)}%</Badge>
+                </div>
+                <div style={{ height: "4px", background: T.bg, borderRadius: "2px", overflow: "hidden", marginBottom: "8px" }}>
+                  <div style={{ height: "100%", width: `${p.enriched / p.count * 100}%`, background: `linear-gradient(90deg, ${T.accent}, ${T.green})`, borderRadius: "2px" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", color: T.textMuted, fontFamily: T.font }}>{p.enriched.toLocaleString()}/{p.count.toLocaleString()}</span>
+                  <span style={{ fontSize: "11px", color: T.accent, fontWeight: 500 }}>Open →</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity Feed */}
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius }}>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: T.text }}>Recent Activity</span>
+          </div>
+          <div style={{ padding: "8px 14px", maxHeight: "380px", overflow: "auto" }}>
+            {ACTIVITIES.map((a, i) => (
+              <div key={i} style={{ display: "flex", gap: "12px", padding: "11px 4px", borderBottom: i < ACTIVITIES.length - 1 ? `1px solid ${T.borderSubtle}` : "none" }}>
+                <div style={{
+                  width: "7px", height: "7px", borderRadius: "50%", marginTop: "5px", flexShrink: 0,
+                  background: a.type === "signal" ? T.green : a.type === "watcher" ? T.amber : a.type === "enrichment" ? T.accent : a.type === "scoring" ? T.purple : T.textMuted,
                 }} />
+                <div>
+                  <div style={{ fontSize: "12px", color: T.textSecondary, lineHeight: 1.5 }}>{a.text}</div>
+                  <div style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, marginTop: "3px" }}>{a.time}</div>
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Keywords */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Keywords</div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, color: T.green, marginBottom: 6, display: "block", fontWeight: 500 }}>✓ Must Include</label>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {["Veterinarian", "Animal Hospital"].map((kw, i) => (
-                <span key={i} style={{ padding: "5px 12px", borderRadius: 20, background: T.greenDim, color: T.green, fontSize: 12, fontWeight: 500, border: `1px solid ${T.green}30` }}>{kw} ×</span>
-              ))}
-              <span style={{ padding: "5px 12px", borderRadius: 20, border: `1px dashed ${T.borderHover}`, color: T.textDim, fontSize: 12, cursor: "pointer" }}>+ Add</span>
-            </div>
-          </div>
-          <div>
-            <label style={{ fontSize: 12, color: T.red, marginBottom: 6, display: "block", fontWeight: 500 }}>✕ Must Exclude</label>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {["Pet Store", "Grooming", "Non-profit"].map((kw, i) => (
-                <span key={i} style={{ padding: "5px 12px", borderRadius: 20, background: T.redDim, color: T.red, fontSize: 12, fontWeight: 500, border: `1px solid ${T.red}30` }}>{kw} ×</span>
-              ))}
-              <span style={{ padding: "5px 12px", borderRadius: 20, border: `1px dashed ${T.borderHover}`, color: T.textDim, fontSize: 12, cursor: "pointer" }}>+ Add</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Scoring Rules */}
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Scoring Logic</div>
-          <div style={{ background: T.surface, borderRadius: T.radiusLg, border: `1px solid ${T.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px 40px", gap: 0, padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontSize: 11, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
-              <span>If Field</span><span>Operator</span><span>Value</span><span>Points</span><span></span>
-            </div>
-            {rules.map((r, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px 40px", gap: 0, padding: "10px 14px", borderBottom: i < rules.length - 1 ? `1px solid ${T.border}08` : "none", alignItems: "center" }}>
-                <span style={{ fontSize: 13, color: T.text }}>{r.field}</span>
-                <span style={{ fontSize: 13, color: T.textMuted }}>{r.operator}</span>
-                <span style={{ fontSize: 13, color: T.text, fontFamily: T.mono }}>{r.value}</span>
-                <Badge color={T.green}>{r.points}</Badge>
-                <span style={{ color: T.textDim, cursor: "pointer", fontSize: 16 }}>×</span>
-              </div>
-            ))}
-            <div style={{ padding: "10px 14px" }}>
-              <span style={{ fontSize: 12, color: T.accent, cursor: "pointer", fontWeight: 500 }}>+ Add Rule</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 28, alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.text, cursor: "pointer" }}>
-            <div style={{ width: 36, height: 20, borderRadius: 10, background: T.green, position: "relative" }}>
-              <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, right: 2 }} />
-            </div>
-            Set Active
-          </label>
-          <button style={{ padding: "10px 24px", borderRadius: T.radius, border: "none", background: `linear-gradient(135deg, ${T.accent}, #2563EB)`, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            Save Thesis
-          </button>
-        </div>
-      </div>
-
-      {/* Right - Preview */}
-      <div style={{ width: 420, overflow: "auto", padding: "28px 24px", background: T.surface }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Live JSON Preview</div>
-        <pre style={{
-          background: T.bg, borderRadius: T.radiusLg, border: `1px solid ${T.border}`,
-          padding: 18, fontSize: 11.5, color: T.textMuted, fontFamily: T.mono,
-          lineHeight: 1.6, overflow: "auto", whiteSpace: "pre-wrap",
-        }}>{jsonPreview}</pre>
-
-        <div style={{ marginTop: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Test Drive</div>
-          <textarea placeholder="Paste a website snippet here to test your scoring rules..." style={{
-            width: "100%", height: 100, padding: 14, borderRadius: T.radius, border: `1px solid ${T.border}`,
-            background: T.bg, color: T.text, fontSize: 13, fontFamily: T.font, resize: "none", boxSizing: "border-box",
-          }} defaultValue="We are a full-service animal hospital offering emergency care, oncology, and orthopedic surgery with 5 board-certified veterinarians." />
-          <button style={{
-            marginTop: 10, padding: "9px 18px", borderRadius: T.radius, border: `1px solid ${T.accent}40`,
-            background: T.accentGlow, color: T.accent, fontSize: 12, fontWeight: 600, cursor: "pointer",
-          }}>Test Score</button>
-          <div style={{
-            marginTop: 14, padding: 16, borderRadius: T.radius, background: T.greenDim,
-            border: `1px solid ${T.green}30`,
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: T.green, marginBottom: 6 }}>✓ MATCH — Score: 8.0</div>
-            <div style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.5 }}>
-              +3.0 Emergency care detected<br/>
-              +2.5 Oncology detected<br/>
-              +1.5 Doctor count ≥ 3<br/>
-              +1.0 Rating threshold met
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// ─── SCREEN 5: INTELLIGENCE GRID ───
-const IntelligenceGrid = () => {
+/* ═══════════════════════════════════════════
+   3. PROJECT WORKSPACE + GRID
+   ═══════════════════════════════════════════ */
+function ProjectWorkspace({ activeProject, setActiveProject }) {
+  const [showUpload, setShowUpload] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const data = [
-    { rank: 9.5, name: "Orange Grove Animal Hospital", site: "orangegrovevet.com", doctors: 6, emergency: true, services: "Oncology, Surgery, Emergency", status: "Review" },
-    { rank: 8.2, name: "Bay Area Animal Care", site: "bayareaanimal.com", doctors: 4, emergency: true, services: "Cardiology, Emergency", status: "Approved" },
-    { rank: 7.8, name: "Pacific Coast Veterinary", site: "pacificcoastvet.com", doctors: 3, emergency: false, services: "Dental, Dermatology", status: "Review" },
-    { rank: 6.5, name: "Valley Vet Specialists", site: "valleyvet.com", doctors: 5, emergency: false, services: "Ortho, Rehab, General", status: "Processing" },
-    { rank: 5.1, name: "SoCal Pet Wellness", site: "socalpet.com", doctors: 2, emergency: false, services: "Wellness, Vaccination", status: "Review" },
-    { rank: 4.3, name: "Coastal Paws Veterinary", site: "coastalpaws.com", doctors: 2, emergency: false, services: "Dental, General", status: "Review" },
-    { rank: 3.0, name: "Redwood Veterinary Clinic", site: "redwoodvet.com", doctors: 1, emergency: false, services: "Exotic, Avian", status: "Rejected" },
-  ];
-  const rankColor = r => r >= 8 ? T.green : r >= 5 ? T.amber : T.textDim;
+  const [showBanner, setShowBanner] = useState(true);
+  const [sortCol, setSortCol] = useState("rank");
+  const [sortDir, setSortDir] = useState("desc");
+  const [showNewProject, setShowNewProject] = useState(false);
+
+  const sorted = [...GRID_DATA].sort((a, b) => {
+    const m = sortDir === "desc" ? -1 : 1;
+    if (sortCol === "rank") return m * (a.rank - b.rank);
+    if (sortCol === "name") return m * a.name.localeCompare(b.name);
+    if (sortCol === "doctors") return m * (a.doctors - b.doctors);
+    return 0;
+  });
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const rankColor = (r) => r >= 8.5 ? T.green : r >= 7 ? T.accent : r >= 5.5 ? T.amber : T.textMuted;
+  const statusColor = (s) => s === "Approved" ? T.green : s === "Processing" ? T.amber : s === "Archived" ? T.textMuted : T.accent;
 
   return (
-    <div style={{ display: "flex", height: "100%", background: T.bg }}>
-      {/* Main Grid */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ padding: "20px 28px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <div style={{ fontSize: 12, color: T.textDim, marginBottom: 4 }}>Home › Targets</div>
-            <h1 style={{ fontSize: 20, fontWeight: 600, color: T.text, fontFamily: T.display, margin: 0 }}>Intelligence Grid</h1>
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      {/* Project sub-panel */}
+      <div style={{ width: "220px", borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", background: T.bg, flexShrink: 0 }}>
+        <div style={{ padding: "14px" }}>
+          <Btn primary style={{ width: "100%", justifyContent: "center", fontSize: "12px", padding: "9px" }} onClick={() => setShowNewProject(true)}>+ New Project</Btn>
+        </div>
+        <div style={{ fontSize: "9.5px", color: T.textDim, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: T.font, fontWeight: 700, padding: "4px 18px 8px" }}>All Projects</div>
+        <div style={{ flex: 1, overflow: "auto", padding: "0 8px" }}>
+          {PROJECTS.map(p => {
+            const active = activeProject?.id === p.id;
+            return (
+              <div key={p.id} onClick={() => setActiveProject(p)}
+                style={{
+                  padding: "11px 12px", borderRadius: T.radius, cursor: "pointer", marginBottom: "3px",
+                  background: active ? T.accentGlow : "transparent",
+                  border: active ? `1px solid ${T.accentBorder}` : "1px solid transparent",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = T.bgHover }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? T.accentGlow : "transparent" }}>
+                <div style={{ fontSize: "12.5px", fontWeight: active ? 600 : 400, color: active ? T.text : T.textSecondary }}>{p.name}</div>
+                <div style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, marginTop: "3px" }}>{p.count.toLocaleString()} targets</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
+        {/* Banner */}
+        {showBanner && (
+          <div style={{
+            background: T.amberDim, border: `1px solid rgba(251,191,36,0.25)`, borderRadius: T.radius,
+            padding: "10px 16px", display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px",
+          }}>
+            <span style={{ fontSize: "15px" }}>⚡</span>
+            <span style={{ fontSize: "12px", color: T.amber, flex: 1, fontWeight: 500 }}>Updates detected from another analyst. Refresh to see the latest data.</span>
+            <Btn style={{ fontSize: "11px", padding: "5px 12px", borderColor: "rgba(251,191,36,0.3)", color: T.amber }} onClick={() => setShowBanner(false)}>Refresh</Btn>
+            <span style={{ cursor: "pointer", color: T.textMuted, fontSize: "18px", lineHeight: 1 }} onClick={() => setShowBanner(false)}>×</span>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: T.radius,
-              background: T.surface, border: `1px solid ${T.border}`, fontSize: 12, color: T.textMuted,
-            }}>
-              <Icon type="search" size={13} /> Filter: Review Required ▾
-            </div>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: T.radius,
-              background: T.surface, border: `1px solid ${T.border}`, fontSize: 12, color: T.textMuted,
-            }}>
-              Sort: Rank ↓
-            </div>
-          </div>
+        )}
+
+        {/* Upload */}
+        <div onClick={() => { setShowUpload(true); setTimeout(() => setShowUpload(false), 3000); }}
+          style={{
+            border: `1.5px dashed ${showUpload ? T.green : T.border}`, borderRadius: T.radius,
+            padding: "22px", textAlign: "center", cursor: "pointer", marginBottom: "20px",
+            background: showUpload ? T.greenDim : "transparent", transition: "all 0.2s",
+          }}>
+          {showUpload ? (
+            <>
+              <div style={{ fontSize: "13px", color: T.green, fontWeight: 600 }}>✓ 2 files uploaded successfully</div>
+              <div style={{ fontSize: "11px", color: T.green, fontFamily: T.font, marginTop: "4px", opacity: 0.8 }}>1,240 rows added to {activeProject?.name}</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: "22px", marginBottom: "4px", color: T.textMuted }}>↑</div>
+              <div style={{ fontSize: "12.5px", color: T.textSecondary }}>Drop CSV or Excel files here, or <span style={{ color: T.accent, fontWeight: 500 }}>browse</span></div>
+              <div style={{ fontSize: "10.5px", color: T.textMuted, fontFamily: T.font, marginTop: "4px" }}>Supports .csv, .xlsx</div>
+            </>
+          )}
         </div>
 
-        <div style={{ flex: 1, padding: "0 28px 20px", overflow: "auto" }}>
-          <div style={{ borderRadius: T.radiusLg, border: `1px solid ${T.border}`, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: T.font }}>
+        {/* Grid */}
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: `1px solid ${T.border}`, gap: "10px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: T.text }}>Intelligence Grid</span>
+            <Badge color={T.textSecondary}>{sorted.length} targets</Badge>
+            <div style={{ flex: 1 }} />
+            <Input placeholder="Search…" style={{ width: "180px", padding: "6px 12px", fontSize: "11px" }} />
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  {["Rank", "Business", "Website", "Doctors", "Emergency", "AI Signals", "Status"].map((h, i) => (
-                    <th key={i} style={{
-                      position: "sticky", top: 0, padding: "11px 14px", textAlign: "left", background: T.surface,
-                      borderBottom: `1px solid ${T.border}`, fontSize: 11, fontWeight: 600, color: T.textDim,
-                      textTransform: "uppercase", letterSpacing: "0.06em",
-                    }}>{h}</th>
+                  {[
+                    { key: "rank", label: "Rank", w: "65px" },
+                    { key: "name", label: "Business" },
+                    { key: "city", label: "Location", w: "130px" },
+                    { key: "doctors", label: "Docs", w: "60px" },
+                    { key: "emergency", label: "24/7", w: "55px" },
+                    { key: "services", label: "Services", w: "190px" },
+                    { key: "revenue", label: "Rev", w: "70px" },
+                    { key: "signals", label: "Sig", w: "50px" },
+                    { key: "status", label: "Status", w: "90px" },
+                  ].map(c => (
+                    <th key={c.key} onClick={() => handleSort(c.key)}
+                      style={{
+                        padding: "10px 14px", textAlign: "left", fontSize: "10px", width: c.w || "auto",
+                        color: sortCol === c.key ? T.textSecondary : T.textMuted,
+                        textTransform: "uppercase", letterSpacing: "0.08em",
+                        fontFamily: T.font, fontWeight: 600, cursor: "pointer",
+                        background: T.bgElevated, borderBottom: `1px solid ${T.border}`,
+                        whiteSpace: "nowrap", userSelect: "none", position: "sticky", top: 0,
+                      }}>
+                      {c.label}
+                      <span style={{ marginLeft: "3px", fontSize: "9px", opacity: sortCol === c.key ? 1 : 0.3 }}>
+                        {sortCol === c.key ? (sortDir === "desc" ? "▼" : "▲") : "▼"}
+                      </span>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data.map((row, ri) => (
-                  <tr key={ri} onClick={() => setSelectedRow(ri)} style={{
-                    cursor: "pointer", borderBottom: `1px solid ${T.border}08`,
-                    background: selectedRow === ri ? T.accentGlow : "transparent",
-                    transition: "background 0.15s ease",
-                  }}>
-                    <td style={{ padding: "12px 14px" }}>
-                      <span style={{ fontSize: 18, fontWeight: 700, color: rankColor(row.rank), fontFamily: T.mono }}>{row.rank}</span>
-                    </td>
-                    <td style={{ padding: "12px 14px", color: T.text, fontWeight: 500 }}>{row.name}</td>
-                    <td style={{ padding: "12px 14px", color: T.accent, fontSize: 12 }}>{row.site}</td>
-                    <td style={{ padding: "12px 14px", fontFamily: T.mono, color: T.text, textAlign: "center" }}>{row.doctors}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <Badge color={row.emergency ? T.green : T.textDim} bg={row.emergency ? T.greenDim : T.surfaceAlt}>
-                        {row.emergency ? "Yes" : "No"}
-                      </Badge>
-                    </td>
-                    <td style={{ padding: "12px 14px", color: T.textMuted, fontSize: 12 }}>{row.services}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <Badge color={
-                        row.status === "Approved" ? T.green : row.status === "Rejected" ? T.red :
-                        row.status === "Processing" ? T.amber : T.accent
-                      }>{row.status}</Badge>
-                    </td>
-                  </tr>
-                ))}
+                {sorted.map(row => {
+                  const sel = selectedRow?.id === row.id;
+                  return (
+                    <tr key={row.id}
+                      onClick={() => { setSelectedRow(row); setDrawerOpen(true); }}
+                      style={{
+                        cursor: "pointer", borderBottom: `1px solid ${T.borderSubtle}`,
+                        background: sel ? T.accentGlow : "transparent", transition: "background 0.1s",
+                      }}
+                      onMouseEnter={e => { if (!sel) e.currentTarget.style.background = T.bgHover }}
+                      onMouseLeave={e => { if (!sel) e.currentTarget.style.background = sel ? T.accentGlow : "transparent" }}>
+                      <td style={{ padding: "10px 14px" }}>
+                        <span style={{ fontSize: "15px", fontWeight: 700, fontFamily: T.font, color: rankColor(row.rank) }}>{row.rank}</span>
+                      </td>
+                      <td style={{ padding: "10px 14px" }}>
+                        <div style={{ fontSize: "12.5px", fontWeight: 500, color: T.text }}>{row.name}</div>
+                        <div style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, marginTop: "1px" }}>{row.website}</div>
+                      </td>
+                      <td style={{ padding: "10px 14px", color: T.textSecondary, fontSize: "11.5px" }}>{row.city}, {row.state}</td>
+                      <td style={{ padding: "10px 14px", fontFamily: T.font, color: T.text, fontSize: "12px" }}>{row.doctors}</td>
+                      <td style={{ padding: "10px 14px" }}>
+                        {row.emergency ? <Badge color={T.green}>YES</Badge> : <span style={{ color: T.textMuted, fontSize: "11px" }}>—</span>}
+                      </td>
+                      <td style={{ padding: "10px 14px", fontSize: "11px", color: T.textSecondary, maxWidth: "190px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.services}</td>
+                      <td style={{ padding: "10px 14px", fontFamily: T.font, fontSize: "11.5px", color: T.text }}>{row.revenue}</td>
+                      <td style={{ padding: "10px 14px" }}><span style={{ fontFamily: T.font, fontSize: "11px", color: T.purple, fontWeight: 600 }}>{row.signals}</span></td>
+                      <td style={{ padding: "10px 14px" }}><Badge color={statusColor(row.status)}>{row.status}</Badge></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", borderTop: `1px solid ${T.border}` }}>
+            <span style={{ fontSize: "11px", color: T.textMuted, fontFamily: T.font }}>Page 1 of 25 · {activeProject?.count?.toLocaleString()} total</span>
+            <div style={{ display: "flex", gap: "4px" }}>
+              {[1, 2, 3, "…", 25].map((p, i) => (
+                <button key={i} style={{
+                  width: "28px", height: "28px", borderRadius: "4px",
+                  border: p === 1 ? `1px solid ${T.accentBorder}` : `1px solid ${T.border}`,
+                  background: p === 1 ? T.accentGlow : "transparent",
+                  color: p === 1 ? T.accent : T.textMuted,
+                  fontSize: "11px", fontFamily: T.font, cursor: "pointer",
+                }}>{p}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Evidence Drawer */}
-      {selectedRow !== null && (
-        <div style={{
-          width: 380, background: T.surface, borderLeft: `1px solid ${T.border}`,
-          display: "flex", flexDirection: "column", animation: "slideRight 0.25s ease",
-          overflow: "auto",
-        }}>
-          <div style={{ padding: "20px 22px", borderBottom: `1px solid ${T.border}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-              <div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: T.text, margin: "0 0 4px", fontFamily: T.display }}>{data[selectedRow].name}</h3>
-                <span style={{ fontSize: 12, color: T.accent }}>{data[selectedRow].site}</span>
+      {drawerOpen && selectedRow && (
+        <>
+          <div onClick={() => setDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 99 }} />
+          <div style={{
+            position: "fixed", top: 0, right: 0, bottom: 0, width: "440px",
+            background: T.bgCard, borderLeft: `1px solid ${T.border}`, zIndex: 100,
+            display: "flex", flexDirection: "column", boxShadow: "-20px 0 60px rgba(0,0,0,0.5)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", padding: "18px 22px", borderBottom: `1px solid ${T.border}`, gap: "12px" }}>
+              <span style={{ fontSize: "26px", fontWeight: 700, fontFamily: T.font, color: rankColor(selectedRow.rank) }}>{selectedRow.rank}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: T.text }}>{selectedRow.name}</div>
+                <div style={{ fontSize: "11px", color: T.textSecondary }}>{selectedRow.city}, {selectedRow.state}</div>
               </div>
-              <span onClick={() => setSelectedRow(null)} style={{ cursor: "pointer", color: T.textDim, fontSize: 20 }}>×</span>
+              <button onClick={() => setDrawerOpen(false)} style={{ background: "none", border: "none", color: T.textMuted, fontSize: "22px", cursor: "pointer" }}>×</button>
             </div>
-            <div style={{ marginTop: 14 }}>
-              <label style={{ fontSize: 11, color: T.textDim, marginBottom: 4, display: "block", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Override Rank</label>
-              <input readOnly value={data[selectedRow].rank} style={{
-                width: 80, padding: "8px 10px", borderRadius: T.radius, border: `1px solid ${T.border}`,
-                background: T.bg, color: T.text, fontSize: 18, fontWeight: 700, fontFamily: T.mono, textAlign: "center",
+
+            <div style={{ flex: 1, overflow: "auto", padding: "20px 22px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" }}>
+                {[["Doctors", selectedRow.doctors], ["Revenue", selectedRow.revenue], ["Emergency", selectedRow.emergency ? "Yes" : "No"], ["Signals", selectedRow.signals]].map(([l, v]) => (
+                  <div key={l} style={{ background: T.bgElevated, borderRadius: T.radius, padding: "12px 14px", border: `1px solid ${T.borderSubtle}` }}>
+                    <div style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>{l}</div>
+                    <div style={{ fontSize: "16px", fontWeight: 600, fontFamily: T.font, color: T.text }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: T.font, color: T.textMuted, marginBottom: "12px" }}>AI Evidence</div>
+
+              {[
+                { claim: "Offers Emergency Care", proof: "We are open 24/7 for all pet emergencies. Our team of board-certified specialists is available around the clock.", confidence: 95 },
+                { claim: "Oncology Department", proof: "Our state-of-the-art oncology center provides chemotherapy, radiation therapy, and surgical oncology services.", confidence: 92 },
+                { claim: "Multi-Doctor Practice", proof: `Our team includes ${selectedRow.doctors} licensed veterinarians specializing in surgery, internal medicine, and emergency care.`, confidence: 88 },
+                { claim: "Surgical Capabilities", proof: "We perform both soft tissue and orthopedic surgeries in our fully equipped surgical suites.", confidence: 85 },
+              ].map((ev, i) => (
+                <div key={i} style={{ background: T.bgElevated, borderRadius: T.radius, padding: "14px", marginBottom: "8px", borderLeft: `3px solid ${T.accent}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: T.text }}>{ev.claim}</span>
+                    <Badge color={T.green}>{ev.confidence}%</Badge>
+                  </div>
+                  <div style={{ fontSize: "11.5px", color: T.textSecondary, lineHeight: 1.6, background: "rgba(75,142,245,0.05)", padding: "10px 12px", borderRadius: "4px", fontStyle: "italic" }}>
+                    "{ev.proof}"
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", padding: "16px 22px", borderTop: `1px solid ${T.border}` }}>
+              <Btn primary style={{ flex: 1, justifyContent: "center", background: T.green, fontSize: "13px", padding: "11px" }}>✓ Approve</Btn>
+              <Btn danger style={{ flex: 1, justifyContent: "center", fontSize: "13px", padding: "11px" }}>✗ Reject</Btn>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* New Project Modal */}
+      {showNewProject && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setShowNewProject(false)}>
+          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "10px", padding: "28px", width: "420px" }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: "17px", fontWeight: 600, marginBottom: "20px", color: T.text }}>Create New Project</h3>
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ fontSize: "11px", color: T.textSecondary, fontWeight: 600, display: "block", marginBottom: "6px" }}>Project Name *</label>
+              <Input placeholder="e.g., Vet Clinics – CA" />
+            </div>
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ fontSize: "11px", color: T.textSecondary, fontWeight: 600, display: "block", marginBottom: "6px" }}>Description</label>
+              <textarea placeholder="Optional description..." style={{
+                width: "100%", padding: "10px 14px", background: T.bgElevated,
+                border: `1px solid ${T.border}`, borderRadius: T.radius,
+                color: T.text, fontSize: "13px", fontFamily: T.fontSans,
+                outline: "none", resize: "vertical", minHeight: "70px", boxSizing: "border-box",
               }} />
             </div>
-          </div>
-          <div style={{ padding: "18px 22px", flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>AI Evidence</div>
-            {[
-              { claim: "Offers Emergency Care", proof: "We are open 24/7 for all pet emergencies..." },
-              { claim: "Oncology Department", proof: "Our board-certified oncologist Dr. Rivera specializes in..." },
-              { claim: "6 Licensed Veterinarians", proof: "Meet our team of 6 experienced veterinarians..." },
-            ].map((e, i) => (
-              <div key={i} style={{
-                marginBottom: 14, padding: 14, borderRadius: T.radius,
-                background: T.bg, border: `1px solid ${T.border}`,
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: T.text, marginBottom: 6 }}>{e.claim}</div>
-                <div style={{
-                  fontSize: 12, color: T.textMuted, lineHeight: 1.5, padding: "6px 10px",
-                  borderLeft: `3px solid ${T.amber}`, background: T.amberDim, borderRadius: "0 4px 4px 0",
-                }}>"{e.proof}"</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: "16px 22px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 10 }}>
-            <button style={{
-              flex: 1, padding: "12px", borderRadius: T.radius, border: "none",
-              background: T.green, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            }}>✓ Approve Target</button>
-            <button style={{
-              flex: 1, padding: "12px", borderRadius: T.radius, border: "none",
-              background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            }}>✕ Reject</button>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <Btn onClick={() => setShowNewProject(false)}>Cancel</Btn>
+              <Btn primary onClick={() => setShowNewProject(false)}>Create Project</Btn>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
+}
 
-// ─── SCREEN 6: WATCHER STRATEGY HUB ───
-const WatcherHub = () => {
-  const markets = [
-    { name: "Dallas-Fort Worth", targets: 520, avgRank: 6.8, lastScan: "2 days ago", tier: 1 },
-    { name: "Los Angeles Metro", targets: 890, avgRank: 5.9, lastScan: "5 days ago", tier: 1 },
-    { name: "San Francisco Bay", targets: 340, avgRank: 7.2, lastScan: "1 day ago", tier: 1 },
-    { name: "Austin-Round Rock", targets: 210, avgRank: 5.4, lastScan: "12 days ago", tier: 2 },
-    { name: "San Diego", targets: 180, avgRank: 6.1, lastScan: "8 days ago", tier: 2 },
-    { name: "Sacramento", targets: 120, avgRank: 4.8, lastScan: "20 days ago", tier: 3 },
-  ];
-  const tiers = [
-    { level: 1, label: "High Priority", freq: "Every 15 Days", color: T.green, count: 3 },
-    { level: 2, label: "Medium Priority", freq: "Every 30 Days", color: T.amber, count: 2 },
-    { level: 3, label: "Low Priority", freq: "Every 60 Days", color: T.textDim, count: 1 },
-  ];
+/* ═══════════════════════════════════════════
+   4. THESIS ARCHITECT
+   ═══════════════════════════════════════════ */
+function ThesisArchitect() {
+  const [rules, setRules] = useState(THESIS_RULES);
+  const [testText, setTestText] = useState("");
+  const [testResult, setTestResult] = useState(null);
+  const positiveKw = ["Veterinarian", "Animal Hospital", "Vet Clinic", "Emergency Vet"];
+  const negativeKw = ["Pet Store", "Grooming", "Non-profit", "Shelter"];
+
+  const runTest = () => {
+    let score = 0, matched = [];
+    rules.forEach(r => {
+      if (testText.toLowerCase().includes(r.value.toLowerCase())) { score += r.points; matched.push(r); }
+    });
+    const excluded = negativeKw.some(k => testText.toLowerCase().includes(k.toLowerCase()));
+    setTestResult({ score, matched, excluded });
+  };
+
+  const jsonPreview = { thesis_name: "Vet Clinics – CA", sector: "Veterinary Services", positive_keywords: positiveKw, negative_keywords: negativeKw, scoring_rules: rules, active: true };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg, overflow: "auto" }}>
-      <div style={{ padding: "20px 28px 0" }}>
-        <div style={{ fontSize: 12, color: T.textDim, marginBottom: 4 }}>Home › Strategies</div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 600, color: T.text, fontFamily: T.display, margin: 0 }}>Watcher Strategy Hub</h1>
-          <div style={{ fontSize: 12, color: T.textMuted }}>Next scheduled scan: <span style={{ color: T.green, fontWeight: 600, fontFamily: T.mono }}>4h 23m</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      {/* Left */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, marginBottom: "16px" }}>Thesis Metadata</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div>
+              <label style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, textTransform: "uppercase", display: "block", marginBottom: "5px" }}>Name</label>
+              <Input value="Vet Clinics – CA" onChange={() => {}} />
+            </div>
+            <div>
+              <label style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, textTransform: "uppercase", display: "block", marginBottom: "5px" }}>Sector</label>
+              <Input value="Veterinary Services" onChange={() => {}} />
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Map Placeholder + Markets Table */}
-      <div style={{ padding: "0 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        {/* Map */}
-        <div style={{
-          background: T.surface, borderRadius: T.radiusLg, border: `1px solid ${T.border}`,
-          padding: 20, minHeight: 240, position: "relative", overflow: "hidden",
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Geographic Command Center</div>
-          <svg viewBox="0 0 960 600" style={{ width: "100%", height: "auto", opacity: 0.15 }}>
-            <path d="M233 453l3-17 9-8 16 2 18-13 4-16 15-8 12-18 20-2 13-12 28-4 18-10 8-15 22-6 15 7 24-4 18-12 12-20 26-8 10-14 20 2 16-8 22-14 14-4 12 6 18-6 24-2 20-10 16 4 8 12 14 6 22-2 18-8 14 4 10 14 6 18-2 16-8 12-16 8-10 14 2 20 12 16 4 22-6 14-14 8-12-2-18-10-14-6-10 8-6 16 4 18-8 14-18 6-24-2-16-10-12 6-8 16-18 10-22-4-14-12-10 8-20 2-16-14-26 6-18-8-12 4-14 14-20 8-22-2-16-12-8 6-10 16-14 4-18-8z" fill={T.accent}/>
-          </svg>
-          {/* Market dots */}
-          {[
-            { x: "72%", y: "62%", label: "DFW", active: true },
-            { x: "18%", y: "55%", label: "LA", active: true },
-            { x: "12%", y: "38%", label: "SF", active: true },
-            { x: "60%", y: "68%", label: "ATX", active: false },
-            { x: "16%", y: "58%", label: "SD", active: false },
-          ].map((dot, i) => (
-            <div key={i} style={{
-              position: "absolute", left: dot.x, top: dot.y, transform: "translate(-50%,-50%)",
-              display: "flex", alignItems: "center", gap: 4,
-            }}>
-              <div style={{
-                width: dot.active ? 10 : 7, height: dot.active ? 10 : 7, borderRadius: "50%",
-                background: dot.active ? T.green : T.textDim,
-                boxShadow: dot.active ? `0 0 12px ${T.green}80` : "none",
-                animation: dot.active ? "pulse 2s infinite" : "none",
-              }} />
-              <span style={{ fontSize: 9, color: T.textMuted, fontWeight: 600, fontFamily: T.mono }}>{dot.label}</span>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, marginBottom: "14px" }}>Keywords</div>
+          <div style={{ marginBottom: "16px" }}>
+            <div style={{ fontSize: "10px", color: T.green, fontFamily: T.font, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px", fontWeight: 600 }}>✓ Must Include</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {positiveKw.map(k => <span key={k} style={{ fontSize: "11px", padding: "4px 10px", borderRadius: "4px", background: T.greenDim, color: T.green, fontWeight: 500, border: `1px solid rgba(52,211,153,0.2)` }}>{k} ×</span>)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: "10px", color: T.red, fontFamily: T.font, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px", fontWeight: 600 }}>✗ Must Exclude</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {negativeKw.map(k => <span key={k} style={{ fontSize: "11px", padding: "4px 10px", borderRadius: "4px", background: T.redDim, color: T.red, fontWeight: 500, border: `1px solid rgba(248,113,113,0.2)` }}>{k} ×</span>)}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: T.text }}>Scoring Rules</span>
+            <Btn style={{ fontSize: "11px", padding: "5px 10px", color: T.textSecondary }} onClick={() => setRules([...rules, { field: "", operator: "contains", value: "", points: 1 }])}>+ Add</Btn>
+          </div>
+          {rules.map((r, i) => (
+            <div key={i} style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "8px" }}>
+              <span style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font }}>If</span>
+              <Input value={r.field} onChange={e => { const n = [...rules]; n[i].field = e.target.value; setRules(n); }} style={{ flex: 1, padding: "7px 8px", fontSize: "11px" }} />
+              <select value={r.operator} onChange={e => { const n = [...rules]; n[i].operator = e.target.value; setRules(n); }}
+                style={{ padding: "7px 8px", background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text, fontSize: "11px", outline: "none" }}>
+                <option value="contains">contains</option><option value="equals">equals</option><option value="greater_than">&gt;</option>
+              </select>
+              <Input value={r.value} onChange={e => { const n = [...rules]; n[i].value = e.target.value; setRules(n); }} style={{ width: "100px", padding: "7px 8px", fontSize: "11px" }} />
+              <span style={{ fontSize: "10px", color: T.textMuted }}>→</span>
+              <Input value={String(r.points)} onChange={e => { const n = [...rules]; n[i].points = parseFloat(e.target.value) || 0; setRules(n); }} style={{ width: "50px", padding: "7px 8px", fontSize: "11px", fontFamily: T.font, textAlign: "center" }} />
+              <span style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font }}>pts</span>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Markets Table */}
-        <div style={{ background: T.surface, borderRadius: T.radiusLg, border: `1px solid ${T.border}`, overflow: "hidden" }}>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${T.border}`, fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em" }}>CBSA Markets</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+      {/* Right */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px", flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: T.text }}>JSON Preview</span>
+            <Badge color={T.green}>Live</Badge>
+          </div>
+          <pre style={{
+            background: T.bg, borderRadius: T.radius, padding: "18px", fontSize: "11px",
+            fontFamily: T.font, color: T.cyan, overflow: "auto", maxHeight: "320px",
+            lineHeight: 1.6, border: `1px solid ${T.border}`, margin: 0,
+          }}>{JSON.stringify(jsonPreview, null, 2)}</pre>
+        </div>
+
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, marginBottom: "12px" }}>Test Drive</div>
+          <textarea placeholder='Paste text to test… e.g. "We offer Emergency care and Oncology services with 8 doctors"'
+            value={testText} onChange={e => setTestText(e.target.value)}
+            style={{
+              width: "100%", padding: "12px 14px", background: T.bgElevated,
+              border: `1px solid ${T.border}`, borderRadius: T.radius,
+              color: T.text, fontSize: "12px", fontFamily: T.fontSans,
+              outline: "none", resize: "vertical", minHeight: "80px", boxSizing: "border-box", marginBottom: "12px", lineHeight: 1.5,
+            }} />
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <Btn primary onClick={runTest}>Test Score</Btn>
+            {testResult && (
+              testResult.excluded ? <Badge color={T.red}>REJECTED</Badge> : (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "22px", fontWeight: 700, fontFamily: T.font, color: testResult.score >= 5 ? T.green : testResult.score >= 2 ? T.amber : T.textMuted }}>{testResult.score.toFixed(1)}</span>
+                  <span style={{ fontSize: "11px", color: T.textSecondary }}>{testResult.matched.length} matched</span>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <Btn>Discard</Btn>
+          <Btn primary>Save Thesis</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   5. WATCHER HUB
+   ═══════════════════════════════════════════ */
+function WatcherHub() {
+  const [selectedCBSA, setSelectedCBSA] = useState(null);
+  const tierColors = { 1: T.green, 2: T.amber, 3: T.textMuted };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, marginBottom: "16px" }}>Geographic Command</div>
+          <div style={{ height: "240px", background: T.bg, borderRadius: T.radius, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+            <svg viewBox="0 0 400 240" style={{ width: "100%", height: "100%" }}>
+              <path d="M80,40 L120,30 L150,35 L180,50 L200,80 L220,120 L210,160 L190,200 L160,220 L120,210 L100,180 L90,140 L70,100 Z"
+                fill="rgba(75,142,245,0.06)" stroke={T.accent} strokeWidth="1.5" opacity="0.5" />
+              {[
+                { x: 130, y: 80, l: "SF", t: 1 }, { x: 190, y: 160, l: "LA", t: 1 },
+                { x: 210, y: 130, l: "SD", t: 1 }, { x: 120, y: 110, l: "SAC", t: 2 },
+                { x: 150, y: 90, l: "SJ", t: 2 }, { x: 110, y: 130, l: "FRE", t: 3 },
+              ].map((m, i) => (
+                <g key={i}>
+                  <circle cx={m.x} cy={m.y} r="16" fill={tierColors[m.t]} opacity="0.1" />
+                  <circle cx={m.x} cy={m.y} r="6" fill={tierColors[m.t]} opacity="0.9" />
+                  <text x={m.x + 14} y={m.y + 4} fill={T.textSecondary} fontSize="9" fontFamily={T.font} fontWeight="600">{m.l}</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        </div>
+
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius }}>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, fontSize: "13px", fontWeight: 600, color: T.text }}>CBSA Markets</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["Market", "Targets", "Avg Rank", "Last Scan", "Tier"].map((h, i) => (
-                  <th key={i} style={{ padding: "8px 14px", textAlign: "left", borderBottom: `1px solid ${T.border}`, fontSize: 10, color: T.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                {["Market", "Targets", "Rank", "Scanned", "Tier"].map(h => (
+                  <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontSize: "10px", color: T.textMuted, textTransform: "uppercase", fontFamily: T.font, fontWeight: 600, background: T.bgElevated, borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {markets.map((m, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${T.border}08` }}>
-                  <td style={{ padding: "10px 14px", color: T.text, fontWeight: 500, fontSize: 13 }}>{m.name}</td>
-                  <td style={{ padding: "10px 14px", color: T.textMuted, fontFamily: T.mono }}>{m.targets}</td>
-                  <td style={{ padding: "10px 14px", color: rankC(m.avgRank), fontFamily: T.mono, fontWeight: 600 }}>{m.avgRank}</td>
-                  <td style={{ padding: "10px 14px", color: T.textDim }}>{m.lastScan}</td>
-                  <td style={{ padding: "10px 14px" }}><Badge color={tiers[m.tier - 1].color}>Tier {m.tier}</Badge></td>
-                </tr>
-              ))}
+              {CBSA_DATA.map((c, i) => {
+                const sel = selectedCBSA?.name === c.name;
+                return (
+                  <tr key={i} onClick={() => setSelectedCBSA(c)}
+                    style={{ cursor: "pointer", background: sel ? T.accentGlow : "transparent", borderBottom: `1px solid ${T.borderSubtle}` }}
+                    onMouseEnter={e => { if (!sel) e.currentTarget.style.background = T.bgHover }}
+                    onMouseLeave={e => { if (!sel) e.currentTarget.style.background = sel ? T.accentGlow : "transparent" }}>
+                    <td style={{ padding: "10px 14px", fontWeight: 500, color: T.text, fontSize: "12px" }}>{c.name}</td>
+                    <td style={{ padding: "10px 14px", fontFamily: T.font, color: T.text, fontSize: "12px" }}>{c.targets}</td>
+                    <td style={{ padding: "10px 14px", fontFamily: T.font, color: c.avgRank >= 7 ? T.green : T.amber, fontSize: "12px" }}>{c.avgRank}</td>
+                    <td style={{ padding: "10px 14px", color: T.textSecondary, fontSize: "11px" }}>{c.lastScan}</td>
+                    <td style={{ padding: "10px 14px" }}><Badge color={tierColors[c.tier]}>T{c.tier}</Badge></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Strategy Tiers */}
-      <div style={{ padding: "0 28px 28px" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Strategy Configuration</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-          {tiers.map((t, i) => (
-            <div key={i} style={{
-              background: T.surface, borderRadius: T.radiusLg, border: `1px solid ${T.border}`,
-              padding: 22, animation: `slideUp 0.5s ease ${i * 0.1}s both`,
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Badge color={t.color}>Tier {t.level} — {t.label}</Badge>
-                <span style={{ fontSize: 11, color: T.textDim }}>{t.count} markets</span>
+      <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "20px" }}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: T.text, marginBottom: "20px" }}>Strategy Tiers</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+          {[
+            { tier: 1, label: "Tier 1 — High", freq: 15, markets: 3, targets: 1010, color: T.green },
+            { tier: 2, label: "Tier 2 — Medium", freq: 30, markets: 2, targets: 335, color: T.amber },
+            { tier: 3, label: "Tier 3 — Low", freq: 60, markets: 1, targets: 85, color: T.textMuted },
+          ].map(t => (
+            <div key={t.tier} style={{ background: T.bgElevated, borderRadius: T.radius, padding: "18px", borderTop: `3px solid ${t.color}` }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, marginBottom: "14px", color: t.color }}>{t.label}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.font, textTransform: "uppercase" }}>Frequency</span>
+                <span style={{ fontSize: "12px", fontFamily: T.font, fontWeight: 600, color: T.text }}>Every {t.freq}d</span>
               </div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>Re-scan Frequency</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ flex: 1, height: 6, background: T.bg, borderRadius: 3, position: "relative" }}>
-                    <div style={{ width: `${(60 - parseInt(t.freq)) / 60 * 100}%`, height: "100%", background: t.color, borderRadius: 3 }} />
-                    <div style={{
-                      position: "absolute", top: -5, left: `${(60 - parseInt(t.freq)) / 60 * 100}%`, transform: "translateX(-50%)",
-                      width: 16, height: 16, borderRadius: "50%", background: t.color, border: `3px solid ${T.surface}`,
-                    }} />
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: T.text, fontFamily: T.mono, minWidth: 80, textAlign: "right" }}>{t.freq}</span>
-                </div>
+              <div style={{ height: "5px", background: T.bg, borderRadius: "3px", marginBottom: "12px" }}>
+                <div style={{ height: "100%", width: `${((90 - t.freq) / 90) * 100}%`, background: t.color, borderRadius: "3px", opacity: 0.8 }} />
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textMuted, cursor: "pointer" }}>
-                <div style={{ width: 32, height: 18, borderRadius: 9, background: i < 2 ? T.green : T.surfaceAlt, position: "relative" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, ...(i < 2 ? { right: 2 } : { left: 2 }) }} />
-                </div>
-                Resurrect Archived
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: T.textSecondary }}>
+                <span>{t.markets} markets</span><span>{t.targets} targets</span>
+              </div>
+              <div style={{ marginTop: "10px", fontSize: "10px", color: T.textMuted, fontFamily: T.font }}>
+                Next: <span style={{ color: t.color, fontWeight: 600 }}>{t.freq <= 15 ? "3 days" : t.freq <= 30 ? "12 days" : "28 days"}</span>
+              </div>
             </div>
           ))}
         </div>
       </div>
     </div>
   );
-};
+}
 
-const rankC = r => r >= 7 ? T.green : r >= 5 ? T.amber : T.textDim;
-
-// ─── MAIN APP ───
-const screens = [
-  { key: "auth", label: "Auth Gateway", icon: "lock" },
-  { key: "project", label: "Project Dashboard", icon: "folder" },
-  { key: "command", label: "Command Dashboard", icon: "grid" },
-  { key: "thesis", label: "Thesis Architect", icon: "brain" },
-  { key: "intel", label: "Intelligence Grid", icon: "target" },
-  { key: "watcher", label: "Watcher Hub", icon: "eye" },
-];
-
+/* ═══════════════════════════════════════════
+   MAIN APP — Login routes to Dashboard
+   ═══════════════════════════════════════════ */
 export default function App() {
-  const [activeScreen, setActiveScreen] = useState("project");
+  const [screen, setScreen] = useState("login");
+  const [activeProject, setActiveProject] = useState(PROJECTS[0]);
+
+  const globalStyles = `
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: ${T.bg}; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }
+    select option { background: ${T.bgElevated}; color: ${T.text}; }
+    ::placeholder { color: ${T.textDim} !important; }
+  `;
+
+  if (screen === "login") {
+    return <>
+      <style>{globalStyles}</style>
+      <LoginScreen onLogin={() => setScreen("dashboard")} />
+    </>;
+  }
+
+  const titles = { dashboard: "Command Dashboard", project: `Projects › ${activeProject?.name}`, thesis: "Thesis Architect", watcher: "Watcher Strategy Hub" };
 
   return (
-    <div style={{ fontFamily: T.font, height: "100vh", display: "flex", flexDirection: "column", background: T.bg, color: T.text }}>
-      <style>{fadeIn}{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }
-        input:focus { border-color: ${T.accent} !important; outline: none; }
-        button:hover { opacity: 0.9; }
-        tr:hover { background: ${T.accentGlow} !important; }
-      `}</style>
-
-      {/* Screen Selector Nav */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 2, padding: "8px 12px",
-        background: T.surface, borderBottom: `1px solid ${T.border}`, overflowX: "auto",
-        flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginRight: 12, whiteSpace: "nowrap" }}>Screens</span>
-        {screens.map((s) => (
-          <button key={s.key} onClick={() => setActiveScreen(s.key)} style={{
-            padding: "6px 14px", borderRadius: T.radius, border: `1px solid ${activeScreen === s.key ? T.accent + "50" : "transparent"}`,
-            background: activeScreen === s.key ? T.accentGlow : "transparent",
-            color: activeScreen === s.key ? T.text : T.textMuted,
-            fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: T.font, whiteSpace: "nowrap",
-            display: "flex", alignItems: "center", gap: 6,
-          }}>
-            <Icon type={s.icon} size={12} />
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Screen Content */}
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        {activeScreen === "auth" && <AuthScreen />}
-        {activeScreen === "project" && <ProjectDashboard />}
-        {activeScreen === "command" && <CommandDashboard />}
-        {activeScreen === "thesis" && <ThesisArchitect />}
-        {activeScreen === "intel" && <IntelligenceGrid />}
-        {activeScreen === "watcher" && <WatcherHub />}
+    <div style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: T.fontSans, color: T.text, fontSize: "13px" }}>
+      <style>{globalStyles}</style>
+      <Sidebar screen={screen} setScreen={setScreen} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <TopBar breadcrumb={titles[screen]} />
+        <div style={{ flex: 1, overflow: "auto", padding: screen === "project" ? 0 : "24px" }}>
+          {screen === "dashboard" && <CommandDashboard setScreen={setScreen} />}
+          {screen === "project" && <ProjectWorkspace activeProject={activeProject} setActiveProject={setActiveProject} />}
+          {screen === "thesis" && <ThesisArchitect />}
+          {screen === "watcher" && <WatcherHub />}
+        </div>
       </div>
     </div>
   );

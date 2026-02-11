@@ -148,7 +148,7 @@ function StocLogo({ size = "md" }) {
       display: "flex", alignItems: "center", justifyContent: "center",
       fontSize: fs, fontWeight: 800, color: "#fff", fontFamily: T.font,
       letterSpacing: "-0.03em",
-    }}>ST</div>
+    }}>SA</div>
   );
 }
 
@@ -208,8 +208,8 @@ function Sidebar({ screen, setScreen }) {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#fff" }}>JD</div>
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: T.text }}>John Doe</div>
-            <div style={{ fontSize: "13px", color: T.textMuted }}>Analyst</div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: T.text }}>Srushti</div>
+            <div style={{ fontSize: "13px", color: T.textMuted }}>Manager</div>
           </div>
         </div>
       </div>
